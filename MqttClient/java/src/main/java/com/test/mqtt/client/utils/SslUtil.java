@@ -1,4 +1,4 @@
-package com.litmonk.connectmgr.mqtt.utils;
+package com.test.mqtt.client.utils;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.util.io.pem.PemObject;

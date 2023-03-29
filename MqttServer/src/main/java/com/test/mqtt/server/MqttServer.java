@@ -35,7 +35,7 @@ public class MqttServer {
             log.info("Received on topic: {}, content: {}", msg.getTopicName(), decodedPayload);
 
             MqttPublishMessage message = MqttMessageBuilders.publish()
-                    .topicName("/mqtt/response")
+                    .topicName("to/mqtt/response")
                     .retained(true)
                     .qos(MqttQoS.AT_MOST_ONCE)
                     .payload(Unpooled.copiedBuffer("Hello World!!".getBytes(StandardCharsets.UTF_8)))
