@@ -2,6 +2,7 @@ import re
 import json
 import ssl
 import time
+import os
 
 import paho.mqtt.client as mqtt
 
@@ -20,8 +21,11 @@ class MqttClient(object):
         self.config = config
         self.client = mqtt.Client(
             client_id = self.config['client_id'] if 'client_id' in self.config else 'client_id')
-        self.client.tls_set(ca_certs="server.crt", certfile="T001.pem", keyfile="T001.key",
-                            tls_version=ssl.PROTOCOL_TLSv1_2)
+        cert_path = os.path.dirname(__file__)
+        ca_cert = cert_path + "/server.pem"
+        cert_file = cert_path + "/T001.pem"
+        key_file = cert_path + "/T001.key"
+        self.client.tls_set(ca_certs=ca_cert, certfile=cert_file, keyfile=key_file, tls_version=ssl.PROTOCOL_TLSv1_2)
         self.client.tls_insecure_set(True)
 
         self.client.on_connect = self.on_connect
@@ -40,17 +44,6 @@ class MqttClient(object):
 
     def disconnect(self):
         self.client.loop_stop()
-
-    def set_handler(self, handler, func):
-        '''
-        add callback hanlder
-        :param type: handler type
-        :param handler: handle message function
-        '''
-        if handler not in ['connect_handler', 'disconnect_handler', 'subscribe_handler']:
-            return False
-
-        self.handlers[handler] = func
 
     def add_message_handler(self, handler, topic):
         '''
@@ -75,31 +68,26 @@ class MqttClient(object):
             6-255：当前未使用。
         '''
         print(client, userdata, flags, rc)
-        try:
-            'connect_handler' in self.handlers and isfunction(self.handlers['connect_handler']) and self.handlers[
-                'connect_handler'](self)
-        except Exception as e:
-            print(e)
 
     def on_disconnect(self, client, userdata, rc):
-        'disconnect_handler' in self.handlers and isfunction(self.handlers['disconnect_handler']) and self.handlers[
-            'disconnect_handler'](userdata=userdata, rc=rc)
+        print(client, userdata, rc)
 
     def on_subscribe(self, client, userdata, mid, granted_qos):
-        'subscribe_handler' in self.handlers and isfunction(self.handlers['subscribe_handler']) and self.handlers[
-            'subscribe_handler'](userdata=userdata, mid=mid, granted_qos=granted_qos)
+        print(client, userdata, mid, granted_qos)
 
     def on_message(self, client, userdata, message):
         '''
         handle the message when a PUBLISH message is received from the server
         handlers should not set blocked
         '''
-        for topic in self.message_handlers.keys():
-            regex = re.compile(
-                '^{}$'.format(topic.replace('+', '[^\/\s]+').replace('#', '\S+').replace('/', '\/').replace('$', '\$')))
-            if regex.match(message.topic):
-                for handler in self.message_handlers.get(topic, []):
-                    handler(message.payload)
+        print(client, userdata, message.topic, message.payload)
+        if self.message_handlers:
+            for topic in self.message_handlers.keys():
+                regex = re.compile(
+                    '^{}$'.format(topic.replace('+', '[^\/\s]+').replace('#', '\S+').replace('/', '\/').replace('$', '\$')))
+                if regex.match(message.topic):
+                    for handler in self.message_handlers.get(topic, []):
+                        handler(message.payload)
 
     def subscribe(self, topic, **kwargs):
         '''
