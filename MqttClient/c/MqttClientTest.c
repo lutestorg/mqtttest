@@ -41,26 +41,31 @@ void delivery_complete(void *context, MQTTClient_deliveryToken dt) {
 int main() {
     printf("Start to connect MQTT broker.\n");
 
-    // 创建一个MQTT连接配置结构体，并配置其参数
-    MQTTClient_SSLOptions ssl_opts = MQTTClient_SSLOptions_initializer;
-    ssl_opts.trustStore = CAFILE;
-    ssl_opts.keyStore = CERTFILE;
-    ssl_opts.privateKey = KEYFILE;
-    ssl_opts.enableServerCertAuth = 1;
-
-    MQTTClient_createOptions create_opts = MQTTClient_createOptions_initializer;
-
     MQTTClient client;
-    MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
-    conn_opts.ssl = &ssl_opts;
     int rc = 0;
 
     MQTTClient_message* msg = NULL;
     MQTTProperties props = MQTTProperties_initializer;
 
     // 创建一个MQTT客户端
-    MQTTClient_createWithOptions(&client, ADDRESS, CLIENTID, MQTTCLIENT_PERSISTENCE_NONE, NULL, &create_opts);
+    if (rc = MQTTClient_create(&client, ADDRESS, CLIENTID, MQTTCLIENT_PERSISTENCE_NONE, NULL) != MQTTCLIENT_SUCCESS) {
+        printf("Failed to create client, return code %d\n", rc);
+        rc = EXIT_FAILURE;
+        exit(-1);
+    }
 
+    // 创建一个MQTT连接配置结构体，并配置其参数
+    MQTTClient_SSLOptions ssl_opts = MQTTClient_SSLOptions_initializer;
+    ssl_opts.trustStore = CAFILE;
+    ssl_opts.keyStore = CERTFILE;
+    ssl_opts.privateKey = KEYFILE;
+    ssl_opts.enableServerCertAuth = 1;
+    // 不校验host name
+    ssl_opts.verify = 0;
+
+    MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
+    conn_opts.ssl = &ssl_opts;
+    conn_opts.MQTTVersion = MQTTVERSION_3_1_1;
     conn_opts.keepAliveInterval = 60;
     conn_opts.cleansession = 1;
 
